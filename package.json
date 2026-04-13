@@ -2,6 +2,10 @@
   "name": "admin-page-temp",
   "version": "0.0.0",
   "scripts": {
+    "sync-env": "node ./scripts/write-runtime-env.mjs",
+    "prestart": "npm run sync-env",
+    "prebuild": "npm run sync-env",
+    "pretest": "npm run sync-env",
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
@@ -29,6 +33,7 @@
     "@angular/forms": "^21.1.0",
     "@angular/platform-browser": "^21.1.0",
     "@angular/router": "^21.1.0",
+    "keycloak-js": "^26.2.3",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
