@@ -101,11 +101,21 @@ export class AuthService {
       return null;
     }
 
+    try {
+      await this.refreshAccessToken(minValiditySeconds);
+    } catch {
+      return null;
+    }
+
+    if (!this.keycloak?.authenticated || !this.keycloak.token) {
+      return null;
+    }
+
     if (this.keycloak.isTokenExpired(0)) {
       return null;
     }
 
-    return this.keycloak.token ?? null;
+    return this.keycloak.token;
   }
 
   private async initialize(): Promise<void> {
@@ -257,6 +267,7 @@ export class AuthService {
     try {
       const storedSession = JSON.parse(rawValue) as StoredKeycloakSession;
       if (!storedSession.token || !storedSession.refreshToken) {
+        this.clearStoredSession();
         return null;
       }
 
