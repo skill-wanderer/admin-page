@@ -239,13 +239,12 @@ export class AuthService {
         return;
       }
 
-      // Redirect to login only when the token has actually expired.
-      if (this.keycloak.isTokenExpired(0)) {
-        this.stopRefreshTimer();
+      void this.refreshAccessToken(300).catch(() => {
         this.clearStoredSession();
         this.syncAuthState(false);
+        this.keycloak?.clearToken();
         void this.router.navigateByUrl('/admin');
-      }
+      });
     }, AuthService.REFRESH_CHECK_INTERVAL_MS);
   }
 

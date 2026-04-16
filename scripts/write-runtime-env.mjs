@@ -54,11 +54,16 @@ function resolveRequiredEnv(key) {
   return normalizedValue;
 }
 
+function resolveOptionalEnv(key) {
+  const value = process.env[key] ?? fileEnv[key] ?? defaults[key];
+  return stripQuotes(value) || null;
+}
+
 const runtimeEnv = {
   KEYCLOAK_URL: resolveRequiredEnv('KEYCLOAK_URL'),
   KEYCLOAK_REALM: resolveRequiredEnv('KEYCLOAK_REALM'),
   KEYCLOAK_ADMIN_CLIENT_ID: resolveRequiredEnv('KEYCLOAK_ADMIN_CLIENT_ID'),
-  KEYCLOAK_GOOGLE_IDP_HINT: resolveRequiredEnv('KEYCLOAK_GOOGLE_IDP_HINT'),
+  KEYCLOAK_GOOGLE_IDP_HINT: resolveOptionalEnv('KEYCLOAK_GOOGLE_IDP_HINT'),
   APP_WEBSITE_URL: resolveRequiredEnv('APP_WEBSITE_URL'),
 };
 
