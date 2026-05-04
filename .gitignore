@@ -45,3 +45,6 @@ Thumbs.db
 
 # Ignore runtime config (do not commit secrets)
 /public/runtime-config.js
+
+# Local environment variables (do not commit secrets)
+.env
