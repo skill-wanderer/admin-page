@@ -177,6 +177,30 @@ import { AuthService } from '../auth/auth.service';
     .status-ok { color: #059669; }
     .identity { font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+    /* Floating Notification */
+    .floating-notification {
+      position: fixed;
+      top: 32px;
+      right: 32px;
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      z-index: 9999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Responsive */
     @media (max-width: 850px) {
       .admin-body { grid-template-columns: 1fr; }
@@ -188,6 +212,7 @@ import { AuthService } from '../auth/auth.service';
 export class AdminHomeComponent implements OnInit {
   readonly authService = inject(AuthService);
   websiteUrl = '';
+  showNoAdminRole = false;
 
   constructor() {
     const location = inject(Location);
@@ -201,6 +226,12 @@ export class AdminHomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.websiteUrl = (window as any).__env?.APP_WEBSITE_URL;
+    // Kiểm tra cờ thiếu quyền
+    if (localStorage.getItem('no-admin-role')) {
+      this.showNoAdminRole = true;
+      localStorage.removeItem('no-admin-role');
+      setTimeout(() => { this.showNoAdminRole = false; }, 5000);
+    }
   }
 
   async logout(): Promise<void> {

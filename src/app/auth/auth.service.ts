@@ -22,7 +22,11 @@ interface LoginOptions {
   idpHint?: string;
 }
 
+
 const STORAGE_KEY = 'skill-wanderer.admin.keycloak-session';
+
+// Xóa session mỗi lần load lại trang để luôn bắt login lại
+sessionStorage.removeItem(STORAGE_KEY);
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

@@ -8,6 +8,7 @@ export interface AdminAccessAuth {
   isAuthenticated(): boolean;
   hasAdminRole(): boolean;
   login(options?: { forcePrompt?: boolean }): Promise<void>;
+  logout(): Promise<void>;
 }
 
 export async function resolveAdminAccess(
@@ -22,10 +23,13 @@ export async function resolveAdminAccess(
   }
 
   if (!auth.hasAdminRole()) {
-    await auth.login({ forcePrompt: true });
+    // Logout khỏi Keycloak nếu không có quyền Admin
+    await auth.logout();
     return false;
   }
 
+  // Xóa cờ nếu có quyền
+  localStorage.removeItem('no-admin-role');
   return true;
 }
 
