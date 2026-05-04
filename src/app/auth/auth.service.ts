@@ -238,12 +238,14 @@ export class AuthService {
       return;
     }
 
+    // Chủ động refresh token khi còn 60s sẽ hết hạn
     this.refreshIntervalId = window.setInterval(() => {
       if (!this.keycloak?.authenticated) {
         return;
       }
 
-      void this.refreshAccessToken(300).catch(() => {
+      // 60s trước khi hết hạn sẽ refresh
+      void this.refreshAccessToken(60).catch(() => {
         this.clearStoredSession();
         this.syncAuthState(false);
         this.keycloak?.clearToken();

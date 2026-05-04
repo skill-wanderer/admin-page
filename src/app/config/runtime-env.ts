@@ -4,7 +4,8 @@ type RuntimeKey =
   | 'KEYCLOAK_URL'
   | 'KEYCLOAK_REALM'
   | 'KEYCLOAK_ADMIN_CLIENT_ID'
-  | 'KEYCLOAK_GOOGLE_IDP_HINT';
+  | 'KEYCLOAK_GOOGLE_IDP_HINT'
+  | 'APP_WEBSITE_URL';
 
 declare global {
   interface Window {
@@ -17,6 +18,7 @@ export interface RuntimeEnv {
   keycloakRealm: string;
   keycloakAdminClientId: string;
   keycloakGoogleIdpHint: string | null;
+  appWebsiteUrl: string;
 }
 
 const fallbackEnv: RuntimeEnv = {
@@ -24,6 +26,7 @@ const fallbackEnv: RuntimeEnv = {
   keycloakRealm: '',
   keycloakAdminClientId: '',
   keycloakGoogleIdpHint: null,
+  appWebsiteUrl: '',
 };
 
 function readRuntimeValue(key: RuntimeKey, fallbackValue: string): string {
@@ -61,6 +64,7 @@ export function loadRuntimeEnv(): RuntimeEnv {
       'KEYCLOAK_GOOGLE_IDP_HINT',
       fallbackEnv.keycloakGoogleIdpHint,
     ),
+    appWebsiteUrl: readRequiredRuntimeValue('APP_WEBSITE_URL', fallbackEnv.appWebsiteUrl),
   };
 }
 

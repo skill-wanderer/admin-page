@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { Location } from '@angular/common';
 import { AuthService } from '../auth/auth.service';
+import { RUNTIME_ENV } from '../config/runtime-env';
 
 @Component({
   selector: 'app-admin-home',
@@ -16,7 +17,16 @@ import { AuthService } from '../auth/auth.service';
           </div>
 
           <div class="header-actions">
-            <a [href]="websiteUrl" target="_blank" rel="noreferrer" class="btn-secondary">View Site</a>
+            @if (websiteUrl) {
+              <a
+                [href]="websiteUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-secondary"
+              >View Site</a>
+            } @else {
+              <span class="btn-secondary disabled" aria-disabled="true" tabindex="-1">View Site</span>
+            }
             <button type="button" (click)="logout()" class="btn-primary">Sign out</button>
           </div>
         </header>
@@ -25,9 +35,9 @@ import { AuthService } from '../auth/auth.service';
           <aside class="admin-sidebar">
             <p class="sidebar-label">Main Menu</p>
             <nav>
-              <a class="nav-item active">
+              <button class="nav-item active" type="button" tabindex="0" aria-current="page">
                 <span class="icon">⊞</span> Dashboard
-              </a>
+              </button>
             </nav>
           </aside>
 
@@ -211,6 +221,7 @@ import { AuthService } from '../auth/auth.service';
 })
 export class AdminHomeComponent implements OnInit {
   readonly authService = inject(AuthService);
+  readonly runtimeEnv = inject(RUNTIME_ENV);
   websiteUrl = '';
   showNoAdminRole = false;
 
@@ -225,7 +236,7 @@ export class AdminHomeComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.websiteUrl = (window as any).__env?.APP_WEBSITE_URL;
+    this.websiteUrl = this.runtimeEnv.appWebsiteUrl;
     // Kiểm tra cờ thiếu quyền
     if (localStorage.getItem('no-admin-role')) {
       this.showNoAdminRole = true;
