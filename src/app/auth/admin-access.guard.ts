@@ -1,40 +1,26 @@
 import { inject } from '@angular/core';
-import { CanActivateChildFn, CanMatchFn, Router, UrlTree } from '@angular/router';
-
+import { CanActivateChildFn, CanMatchFn } from '@angular/router';
+import { Observable, map, of, switchMap } from 'rxjs';
 import { AuthService } from './auth.service';
 
-export interface AdminAccessAuth {
-  ensureInitialized(): Promise<void>;
-  isAuthenticated(): boolean;
-  hasAdminRole(): boolean;
-  login(options?: { forcePrompt?: boolean }): Promise<void>;
-  logout(): Promise<void>;
+export function resolveAdminAccess(
+  auth: AuthService,
+): Observable<boolean> {
+  return auth.ensureInitialized$().pipe(
+    switchMap(() => {
+      if (!auth.isAuthenticated()) {
+        return auth.login$().pipe(map(() => false));
+      }
+      if (!auth.hasAdminRole()) {
+        return auth.logout$().pipe(map(() => false));
+      }
+
+      localStorage.removeItem('no-admin-role');
+      return of(true);
+    }),
+  );
 }
 
-export async function resolveAdminAccess(
-  auth: AdminAccessAuth,
-  router: Pick<Router, 'parseUrl'>,
-): Promise<boolean | UrlTree> {
-  await auth.ensureInitialized();
+export const adminAccessGuard: CanActivateChildFn = () => resolveAdminAccess(inject(AuthService));
 
-  if (!auth.isAuthenticated()) {
-    await auth.login();
-    return false;
-  }
-
-  if (!auth.hasAdminRole()) {
-    // Logout khỏi Keycloak nếu không có quyền Admin
-    await auth.logout();
-    return false;
-  }
-
-  // Xóa cờ nếu có quyền
-  localStorage.removeItem('no-admin-role');
-  return true;
-}
-
-export const adminAccessGuard: CanActivateChildFn = async () =>
-  resolveAdminAccess(inject(AuthService), inject(Router));
-
-export const adminMatchGuard: CanMatchFn = async () =>
-  resolveAdminAccess(inject(AuthService), inject(Router));
+export const adminMatchGuard: CanMatchFn = () => resolveAdminAccess(inject(AuthService));

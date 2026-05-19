@@ -1,6 +1,19 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import Keycloak, { type KeycloakInitOptions } from 'keycloak-js';
+import {
+  Observable,
+  catchError,
+  defer,
+  finalize,
+  from,
+  map,
+  of,
+  shareReplay,
+  switchMap,
+  tap,
+  throwError,
+} from 'rxjs';
 
 import { RUNTIME_ENV } from '../config/runtime-env';
 
@@ -22,28 +35,20 @@ interface LoginOptions {
   idpHint?: string;
 }
 
-
 const STORAGE_KEY = 'skill-wanderer.admin.keycloak-session';
-
-// Xóa session mỗi lần load lại trang để luôn bắt login lại
 sessionStorage.removeItem(STORAGE_KEY);
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private static readonly REFRESH_CHECK_INTERVAL_MS = 60_000;
-
   private readonly runtimeEnv = inject(RUNTIME_ENV);
   private readonly router = inject(Router);
-
   private keycloak: Keycloak | null = null;
-  private initPromise: Promise<void> | null = null;
+  private initStream$: Observable<void> | null = null;
   private refreshIntervalId: number | null = null;
-
   private readonly readyState = signal(false);
   private readonly authenticatedState = signal(false);
   private readonly adminRoleState = signal(false);
   private readonly displayNameState = signal<string | null>(null);
-
   readonly isReady = this.readyState.asReadonly();
   readonly isLoggedIn = this.authenticatedState.asReadonly();
   readonly displayName = this.displayNameState.asReadonly();
@@ -61,157 +66,186 @@ export class AuthService {
     return Boolean(this.runtimeEnv.keycloakGoogleIdpHint);
   }
 
-  async ensureInitialized(): Promise<void> {
-    if (this.initPromise) {
-      return this.initPromise;
+  ensureInitialized$(): Observable<void> {
+    if (this.initStream$) {
+      return this.initStream$;
     }
 
-    this.initPromise = this.initialize();
-    return this.initPromise;
+    this.initStream$ = this.initialize$().pipe(
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    return this.initStream$;
   }
 
-  async login(options: LoginOptions = {}): Promise<void> {
-    await this.ensureInitialized();
-    await this.keycloak?.login({
-      redirectUri: options.redirectUri ?? `${window.location.origin}/admin`,
-      prompt: options.forcePrompt ? 'login' : undefined,
-      idpHint: options.idpHint,
-    });
+  login$(options: LoginOptions = {}): Observable<void> {
+    return this.ensureInitialized$().pipe(
+      switchMap(() =>
+        from(
+          this.keycloak?.login({
+            redirectUri: options.redirectUri ?? `${window.location.origin}/admin`,
+            prompt: options.forcePrompt ? 'login' : undefined,
+            idpHint: options.idpHint,
+          }) ?? Promise.resolve(),
+        ),
+      ),
+      map(() => void 0),
+    );
   }
 
-  async loginWithGoogle(forcePrompt = false): Promise<void> {
+  loginWithGoogle$(forcePrompt = false): Observable<void> {
     if (!this.runtimeEnv.keycloakGoogleIdpHint) {
-      throw new Error('Google identity provider is not configured.');
+      return throwError(() => new Error('Google identity provider is not configured.'));
     }
 
-    await this.login({
+    return this.login$({
       forcePrompt,
       idpHint: this.runtimeEnv.keycloakGoogleIdpHint,
     });
   }
 
-  async logout(): Promise<void> {
-    await this.ensureInitialized();
-    this.stopRefreshTimer();
-    this.clearStoredSession();
-    this.syncAuthState(false);
-    await this.keycloak?.logout({ redirectUri: window.location.origin });
+  logout$(): Observable<void> {
+    return this.ensureInitialized$().pipe(
+      tap(() => {
+        this.stopRefreshTimer();
+        this.clearStoredSession();
+        this.syncAuthState(false);
+      }),
+      switchMap(() =>
+        from(this.keycloak?.logout({ redirectUri: window.location.origin }) ?? Promise.resolve()),
+      ),
+      map(() => void 0),
+    );
   }
 
-  async getAccessToken(minValiditySeconds = 300): Promise<string | null> {
-    await this.ensureInitialized();
+  getAccessToken$(minValiditySeconds?: number): Observable<string | null> {
+    const effectiveMinValiditySeconds =
+      minValiditySeconds ?? this.runtimeEnv.keycloakRefreshWindowSeconds;
 
-    if (!this.keycloak?.authenticated) {
-      return null;
-    }
+    return this.ensureInitialized$().pipe(
+      switchMap(() => {
+        if (!this.keycloak?.authenticated) {
+          return of(null);
+        }
 
-    try {
-      await this.refreshAccessToken(minValiditySeconds);
-    } catch {
-      return null;
-    }
+        return this.refreshAccessToken$(effectiveMinValiditySeconds).pipe(
+          map(() => {
+            if (!this.keycloak?.authenticated || !this.keycloak.token) {
+              return null;
+            }
+            if (this.keycloak.isTokenExpired(0)) {
+              return null;
+            }
+            return this.keycloak.token;
+          }),
+          catchError(() => of(null)),
+        );
+      }),
+    );
+  }
 
+  getCachedAccessToken(): string | null {
     if (!this.keycloak?.authenticated || !this.keycloak.token) {
-      return null;
-    }
-
-    if (this.keycloak.isTokenExpired(0)) {
       return null;
     }
 
     return this.keycloak.token;
   }
 
-  private async initialize(): Promise<void> {
-    this.keycloak = new Keycloak({
-      url: this.runtimeEnv.keycloakUrl,
-      realm: this.runtimeEnv.keycloakRealm,
-      clientId: this.runtimeEnv.keycloakAdminClientId,
-    });
-    this.attachKeycloakListeners(this.keycloak);
-
-    const storedSession = this.readStoredSession();
-    const baseOptions: KeycloakInitOptions = {
-      pkceMethod: 'S256',
-      checkLoginIframe: false,
-    };
-
-    try {
-      const authenticated = await this.keycloak.init({
-        ...baseOptions,
-        ...storedSession,
+  private initialize$(): Observable<void> {
+    return defer(() => {
+      this.keycloak = new Keycloak({
+        url: this.runtimeEnv.keycloakUrl,
+        realm: this.runtimeEnv.keycloakRealm,
+        clientId: this.runtimeEnv.keycloakAdminClientId,
       });
-      this.syncAuthState(authenticated);
+      this.attachKeycloakListeners(this.keycloak);
 
-      if (authenticated) {
-        await this.refreshAccessToken(300);
-      }
-    } catch (error) {
-      if (!storedSession) {
-        this.syncAuthState(false);
-        this.readyState.set(true);
-        throw error;
-      }
+      const storedSession = this.readStoredSession();
+      const baseOptions: KeycloakInitOptions = {
+        pkceMethod: 'S256',
+        checkLoginIframe: false,
+      };
 
-      this.clearStoredSession();
-      const authenticated = await this.keycloak.init(baseOptions);
-      this.syncAuthState(authenticated);
+      const initWithStored$ = from(
+        this.keycloak.init({
+          ...baseOptions,
+          ...storedSession,
+        }),
+      );
 
-      if (authenticated) {
-        await this.refreshAccessToken(300);
-      }
-    } finally {
-      this.readyState.set(true);
-    }
+      return initWithStored$.pipe(
+        catchError((error) => {
+          if (!storedSession) {
+            this.syncAuthState(false);
+            return throwError(() => error);
+          }
+
+          this.clearStoredSession();
+          return from(this.keycloak!.init(baseOptions));
+        }),
+        switchMap((authenticated) => {
+          this.syncAuthState(authenticated);
+          if (!authenticated) {
+            return of(void 0);
+          }
+
+          return this.refreshAccessToken$(this.runtimeEnv.keycloakRefreshWindowSeconds);
+        }),
+        finalize(() => {
+          this.readyState.set(true);
+        }),
+      );
+    });
   }
 
   private attachKeycloakListeners(keycloak: Keycloak): void {
     keycloak.onAuthSuccess = () => {
       this.syncAuthState(true);
     };
-
     keycloak.onAuthRefreshSuccess = () => {
       this.persistStoredSession();
       this.syncAuthState(true);
     };
-
     keycloak.onAuthLogout = () => {
       this.stopRefreshTimer();
       this.clearStoredSession();
       this.syncAuthState(false);
     };
-
     keycloak.onAuthError = () => {
       this.stopRefreshTimer();
       this.clearStoredSession();
       this.syncAuthState(false);
     };
-
     keycloak.onTokenExpired = () => {
-      void this.refreshAccessToken(300).catch(() => {
-        this.clearStoredSession();
-        this.syncAuthState(false);
-        this.keycloak?.clearToken();
-        void this.router.navigateByUrl('/admin');
+      this.refreshAccessToken$(this.runtimeEnv.keycloakRefreshWindowSeconds).subscribe({
+        error: () => {
+          this.clearStoredSession();
+          this.syncAuthState(false);
+          this.keycloak?.clearToken();
+          void this.router.navigateByUrl('/admin');
+        },
       });
     };
   }
 
-  private async refreshAccessToken(minValiditySeconds: number): Promise<void> {
+  private refreshAccessToken$(minValiditySeconds: number): Observable<void> {
     if (!this.keycloak?.authenticated) {
-      return;
+      return of(void 0);
     }
 
-    try {
-      await this.keycloak.updateToken(minValiditySeconds);
-      this.persistStoredSession();
-      this.syncAuthState(true);
-    } catch (error) {
-      this.clearStoredSession();
-      this.syncAuthState(false);
-      this.keycloak.clearToken();
-      throw error;
-    }
+    return from(this.keycloak.updateToken(minValiditySeconds)).pipe(
+      tap(() => {
+        this.persistStoredSession();
+        this.syncAuthState(true);
+      }),
+      map(() => void 0),
+      catchError((error) => {
+        this.clearStoredSession();
+        this.syncAuthState(false);
+        this.keycloak!.clearToken();
+        return throwError(() => error);
+      }),
+    );
   }
 
   private syncAuthState(authenticated: boolean): void {
@@ -238,20 +272,20 @@ export class AuthService {
       return;
     }
 
-    // Chủ động refresh token khi còn 60s sẽ hết hạn
     this.refreshIntervalId = window.setInterval(() => {
       if (!this.keycloak?.authenticated) {
         return;
       }
 
-      // 60s trước khi hết hạn sẽ refresh
-      void this.refreshAccessToken(60).catch(() => {
-        this.clearStoredSession();
-        this.syncAuthState(false);
-        this.keycloak?.clearToken();
-        void this.router.navigateByUrl('/admin');
+      this.refreshAccessToken$(this.runtimeEnv.keycloakProactiveRefreshMinValiditySeconds).subscribe({
+        error: () => {
+          this.clearStoredSession();
+          this.syncAuthState(false);
+          this.keycloak?.clearToken();
+          void this.router.navigateByUrl('/admin');
+        },
       });
-    }, AuthService.REFRESH_CHECK_INTERVAL_MS);
+    }, this.runtimeEnv.keycloakRefreshCheckIntervalMs);
   }
 
   private stopRefreshTimer(): void {

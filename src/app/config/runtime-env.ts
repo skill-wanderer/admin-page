@@ -5,7 +5,10 @@ type RuntimeKey =
   | 'KEYCLOAK_REALM'
   | 'KEYCLOAK_ADMIN_CLIENT_ID'
   | 'KEYCLOAK_GOOGLE_IDP_HINT'
-  | 'APP_WEBSITE_URL';
+  | 'APP_WEBSITE_URL'
+  | 'KEYCLOAK_REFRESH_WINDOW_SECONDS'
+  | 'KEYCLOAK_PROACTIVE_REFRESH_MIN_VALIDITY_SECONDS'
+  | 'KEYCLOAK_REFRESH_CHECK_INTERVAL_MS';
 
 declare global {
   interface Window {
@@ -19,6 +22,9 @@ export interface RuntimeEnv {
   keycloakAdminClientId: string;
   keycloakGoogleIdpHint: string | null;
   appWebsiteUrl: string;
+  keycloakRefreshWindowSeconds: number;
+  keycloakProactiveRefreshMinValiditySeconds: number;
+  keycloakRefreshCheckIntervalMs: number;
 }
 
 const fallbackEnv: RuntimeEnv = {
@@ -27,6 +33,9 @@ const fallbackEnv: RuntimeEnv = {
   keycloakAdminClientId: '',
   keycloakGoogleIdpHint: null,
   appWebsiteUrl: '',
+  keycloakRefreshWindowSeconds: 300,
+  keycloakProactiveRefreshMinValiditySeconds: 60,
+  keycloakRefreshCheckIntervalMs: 60_000,
 };
 
 function readRuntimeValue(key: RuntimeKey, fallbackValue: string): string {
@@ -52,6 +61,20 @@ function readOptionalRuntimeValue(key: RuntimeKey, fallbackValue: string | null)
   return fallbackValue && fallbackValue.length > 0 ? fallbackValue : null;
 }
 
+function readOptionalRuntimeNumber(key: RuntimeKey, fallbackValue: number): number {
+  const runtimeValue = window.__env?.[key]?.trim();
+  if (!runtimeValue) {
+    return fallbackValue;
+  }
+
+  const parsedValue = Number(runtimeValue);
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return fallbackValue;
+  }
+
+  return Math.floor(parsedValue);
+}
+
 export function loadRuntimeEnv(): RuntimeEnv {
   return {
     keycloakUrl: readRequiredRuntimeValue('KEYCLOAK_URL', fallbackEnv.keycloakUrl),
@@ -65,6 +88,18 @@ export function loadRuntimeEnv(): RuntimeEnv {
       fallbackEnv.keycloakGoogleIdpHint,
     ),
     appWebsiteUrl: readRequiredRuntimeValue('APP_WEBSITE_URL', fallbackEnv.appWebsiteUrl),
+    keycloakRefreshWindowSeconds: readOptionalRuntimeNumber(
+      'KEYCLOAK_REFRESH_WINDOW_SECONDS',
+      fallbackEnv.keycloakRefreshWindowSeconds,
+    ),
+    keycloakProactiveRefreshMinValiditySeconds: readOptionalRuntimeNumber(
+      'KEYCLOAK_PROACTIVE_REFRESH_MIN_VALIDITY_SECONDS',
+      fallbackEnv.keycloakProactiveRefreshMinValiditySeconds,
+    ),
+    keycloakRefreshCheckIntervalMs: readOptionalRuntimeNumber(
+      'KEYCLOAK_REFRESH_CHECK_INTERVAL_MS',
+      fallbackEnv.keycloakRefreshCheckIntervalMs,
+    ),
   };
 }
 
