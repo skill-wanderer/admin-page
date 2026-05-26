@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { switchMap } from 'rxjs';
 import { RUNTIME_ENV } from '../config/runtime-env';
 import { AuthService } from './auth.service';
-import { shouldRefreshTokenByExp } from './jwt-exp.middleware';
+import { resolveRefreshWindowByTokenLifetime, shouldRefreshTokenByExp } from './jwt-exp.middleware';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const authService = inject(AuthService);
@@ -17,8 +17,15 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   return authService.ensureInitialized$().pipe(
     switchMap(() => {
       const cachedToken = authService.getCachedAccessToken();
-      const minValiditySeconds = shouldRefreshTokenByExp(cachedToken, refreshWindowSeconds)
-        ? refreshWindowSeconds
+      const dynamicRefreshWindowSeconds = resolveRefreshWindowByTokenLifetime(
+        cachedToken,
+        refreshWindowSeconds,
+        runtimeEnv.keycloakRefreshWindowPercent,
+        runtimeEnv.keycloakRefreshWindowMinSeconds,
+        runtimeEnv.keycloakRefreshWindowMaxSeconds,
+      );
+      const minValiditySeconds = shouldRefreshTokenByExp(cachedToken, dynamicRefreshWindowSeconds)
+        ? dynamicRefreshWindowSeconds
         : 0;
 
       return authService.getAccessToken$(minValiditySeconds);

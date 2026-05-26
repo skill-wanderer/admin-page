@@ -7,6 +7,9 @@ type RuntimeKey =
   | 'KEYCLOAK_GOOGLE_IDP_HINT'
   | 'APP_WEBSITE_URL'
   | 'KEYCLOAK_REFRESH_WINDOW_SECONDS'
+  | 'KEYCLOAK_REFRESH_WINDOW_PERCENT'
+  | 'KEYCLOAK_REFRESH_WINDOW_MIN_SECONDS'
+  | 'KEYCLOAK_REFRESH_WINDOW_MAX_SECONDS'
   | 'KEYCLOAK_PROACTIVE_REFRESH_MIN_VALIDITY_SECONDS'
   | 'KEYCLOAK_REFRESH_CHECK_INTERVAL_MS';
 
@@ -23,6 +26,9 @@ export interface RuntimeEnv {
   keycloakGoogleIdpHint: string | null;
   appWebsiteUrl: string;
   keycloakRefreshWindowSeconds: number;
+  keycloakRefreshWindowPercent: number;
+  keycloakRefreshWindowMinSeconds: number;
+  keycloakRefreshWindowMaxSeconds: number;
   keycloakProactiveRefreshMinValiditySeconds: number;
   keycloakRefreshCheckIntervalMs: number;
 }
@@ -33,9 +39,12 @@ const fallbackEnv: RuntimeEnv = {
   keycloakAdminClientId: '',
   keycloakGoogleIdpHint: null,
   appWebsiteUrl: '',
-  keycloakRefreshWindowSeconds: 300,
-  keycloakProactiveRefreshMinValiditySeconds: 60,
-  keycloakRefreshCheckIntervalMs: 60_000,
+  keycloakRefreshWindowSeconds: 60,
+  keycloakRefreshWindowPercent: 20,
+  keycloakRefreshWindowMinSeconds: 60,
+  keycloakRefreshWindowMaxSeconds: 7_200,
+  keycloakProactiveRefreshMinValiditySeconds: 30,
+  keycloakRefreshCheckIntervalMs: 30_000,
 };
 
 function readRuntimeValue(key: RuntimeKey, fallbackValue: string): string {
@@ -91,6 +100,18 @@ export function loadRuntimeEnv(): RuntimeEnv {
     keycloakRefreshWindowSeconds: readOptionalRuntimeNumber(
       'KEYCLOAK_REFRESH_WINDOW_SECONDS',
       fallbackEnv.keycloakRefreshWindowSeconds,
+    ),
+    keycloakRefreshWindowPercent: readOptionalRuntimeNumber(
+      'KEYCLOAK_REFRESH_WINDOW_PERCENT',
+      fallbackEnv.keycloakRefreshWindowPercent,
+    ),
+    keycloakRefreshWindowMinSeconds: readOptionalRuntimeNumber(
+      'KEYCLOAK_REFRESH_WINDOW_MIN_SECONDS',
+      fallbackEnv.keycloakRefreshWindowMinSeconds,
+    ),
+    keycloakRefreshWindowMaxSeconds: readOptionalRuntimeNumber(
+      'KEYCLOAK_REFRESH_WINDOW_MAX_SECONDS',
+      fallbackEnv.keycloakRefreshWindowMaxSeconds,
     ),
     keycloakProactiveRefreshMinValiditySeconds: readOptionalRuntimeNumber(
       'KEYCLOAK_PROACTIVE_REFRESH_MIN_VALIDITY_SECONDS',
