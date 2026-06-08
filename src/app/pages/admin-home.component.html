@@ -1,0 +1,91 @@
+<div class="admin-wrapper">
+  <main class="admin-layout">
+
+    <header class="admin-header">
+      <div class="brand-block">
+        <div class="brand-dot"></div>
+        <span class="brand-name">Admin Portal</span>
+      </div>
+      <div class="header-actions">
+        <ng-container *ngIf="websiteUrl; else noSite">
+          <a [href]="websiteUrl" target="_blank" rel="noopener noreferrer" class="btn-ghost">
+            <i class="ti ti-external-link"></i> View Site
+          </a>
+        </ng-container>
+        <ng-template #noSite>
+          <span class="btn-ghost disabled">View Site</span>
+        </ng-template>
+        <button type="button" (click)="logout()" class="btn-solid">
+          <i class="ti ti-logout"></i> Sign out
+        </button>
+      </div>
+    </header>
+
+    <div class="admin-body">
+
+      <aside class="admin-sidebar">
+        <p class="sidebar-label">Menu</p>
+        <nav>
+          <button class="nav-item active" type="button" aria-current="page">
+            <i class="ti ti-layout-dashboard"></i> Dashboard
+          </button>
+          <button class="nav-item" type="button">
+            <i class="ti ti-users"></i> Users
+          </button>
+          <button class="nav-item" type="button">
+            <i class="ti ti-settings"></i> Settings
+          </button>
+          <button class="nav-item" type="button">
+            <i class="ti ti-shield-lock"></i> Permissions
+          </button>
+          <button class="nav-item" type="button">
+            <i class="ti ti-chart-bar"></i> Analytics
+          </button>
+        </nav>
+      </aside>
+
+      <section class="admin-content">
+
+        <div class="hero-panel">
+          <div>
+            <p class="hero-kicker">Welcome back</p>
+            <h2 class="hero-name">{{ authService.displayName() ?? 'Administrator' }}</h2>
+            <p class="hero-sub">Keycloak session · live monitoring</p>
+          </div>
+          <div class="session-badge">
+            <span class="badge-dot"></span> Session active
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <article class="stat-card">
+            <p class="stat-label">Authentication</p>
+            <div class="stat-value" [class.status-ok]="authService.isAuthenticated()">
+              <i class="ti ti-circle-check" *ngIf="authService.isAuthenticated()"></i>
+              <i class="ti ti-circle-x" *ngIf="!authService.isAuthenticated()"></i>
+              {{ authService.isAuthenticated() ? 'Verified' : 'Inactive' }}
+            </div>
+            <p class="stat-sub">via Keycloak SSO</p>
+          </article>
+
+          <article class="stat-card">
+            <p class="stat-label">Admin Role</p>
+            <div class="stat-value" [class.status-ok]="authService.hasAdminRole()">
+              <i class="ti ti-shield-check" *ngIf="authService.hasAdminRole()"></i>
+              <i class="ti ti-shield-x" *ngIf="!authService.hasAdminRole()"></i>
+              {{ authService.hasAdminRole() ? 'Granted' : 'Missing' }}
+            </div>
+            <p class="stat-sub">ROLE_ADMIN</p>
+          </article>
+
+          <article class="stat-card">
+            <p class="stat-label">Current Identity</p>
+            <div class="stat-value identity">{{ authService.displayName() ?? 'Guest' }}</div>
+            <p class="stat-sub">uid · 00a1b2c3</p>
+          </article>
+        </div>
+
+      </section>
+    </div>
+  </main>
+</div>
