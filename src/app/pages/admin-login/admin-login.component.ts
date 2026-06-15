@@ -24,9 +24,16 @@ export class AdminLoginComponent implements OnInit {
 
     this.authService.ensureInitialized$().subscribe({
       next: () => {
-        if (this.authService.isAuthenticated() && this.authService.hasAdminRole()) {
-          void this.router.navigateByUrl('/admin');
+        if (!this.authService.isAuthenticated()) {
+          return;
         }
+
+        if (this.isAuthCallbackRequest() && this.authService.hasAdminRole()) {
+          void this.router.navigateByUrl('/admin');
+          return;
+        }
+
+        this.logoutFromLandingPage();
       },
     });
   }
@@ -40,5 +47,19 @@ export class AdminLoginComponent implements OnInit {
         finalize(() => this.isSubmitting.set(false)),
       )
       .subscribe();
+  }
+
+  private logoutFromLandingPage(): void {
+    this.authService
+      .logout$()
+      .pipe(catchError(() => EMPTY))
+      .subscribe();
+  }
+
+  private isAuthCallbackRequest(): boolean {
+    const callbackPayload = `${window.location.search}&${window.location.hash}`;
+    return ['code=', 'state=', 'session_state=', 'iss='].some((fragment) =>
+      callbackPayload.includes(fragment),
+    );
   }
 }
