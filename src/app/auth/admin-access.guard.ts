@@ -1,18 +1,20 @@
 import { inject } from '@angular/core';
-import { CanActivateChildFn, CanMatchFn } from '@angular/router';
+import { CanActivateChildFn, CanMatchFn, Router, UrlTree } from '@angular/router';
 import { Observable, map, of, switchMap } from 'rxjs';
 import { AuthService } from './auth.service';
 
 export function resolveAdminAccess(
   auth: AuthService,
-): Observable<boolean> {
+  router: Router,
+): Observable<boolean | UrlTree> {
   return auth.ensureInitialized$().pipe(
     switchMap(() => {
       if (!auth.isAuthenticated()) {
-        return auth.login$().pipe(map(() => false));
+        return of(router.parseUrl('/'));
       }
       if (!auth.hasAdminRole()) {
-        return auth.logout$().pipe(map(() => false));
+        localStorage.setItem('no-admin-role', 'true');
+        return auth.logout$().pipe(map(() => router.parseUrl('/')));
       }
 
       localStorage.removeItem('no-admin-role');
@@ -21,6 +23,8 @@ export function resolveAdminAccess(
   );
 }
 
-export const adminAccessGuard: CanActivateChildFn = () => resolveAdminAccess(inject(AuthService));
+export const adminAccessGuard: CanActivateChildFn = () =>
+  resolveAdminAccess(inject(AuthService), inject(Router));
 
-export const adminMatchGuard: CanMatchFn = () => resolveAdminAccess(inject(AuthService));
+export const adminMatchGuard: CanMatchFn = () =>
+  resolveAdminAccess(inject(AuthService), inject(Router));

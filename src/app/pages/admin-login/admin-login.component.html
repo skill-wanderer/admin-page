@@ -1,0 +1,50 @@
+<div class="login-shell">
+  <div class="login-backdrop"></div>
+
+  <main class="login-layout">
+    <section class="login-copy">
+      <p class="eyebrow">Skill Wanderer</p>
+      <h1>Admin access stays here until you choose to sign in.</h1>
+      <p class="summary">
+        Manage internal operations, permissions, and monitoring from one admin workspace.
+        Authentication is handled through Skill Wanderer SSO.
+      </p>
+
+      <div class="bullet-list">
+        <div class="bullet-item">Protected by Keycloak SSO</div>
+        <div class="bullet-item">Admin role required</div>
+        <div class="bullet-item">No automatic redirect on page load</div>
+      </div>
+    </section>
+
+    <section class="login-card">
+      <div class="card-top">
+        <p class="card-kicker">Admin Portal</p>
+        <h2>Sign in to continue</h2>
+        <p class="card-copy">
+          Choose a sign-in method to open the admin dashboard.
+        </p>
+      </div>
+
+      <p *ngIf="hasNoAdminRole()" class="warning-banner">
+        Your account signed in successfully, but it does not have the Admin role for this portal.
+      </p>
+
+      <div class="actions">
+        <button type="button" class="primary-btn" (click)="loginWithSso()" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Redirecting...' : 'Login with SSO' }}
+        </button>
+
+        <button
+          *ngIf="authService.hasGoogleLogin()"
+          type="button"
+          class="secondary-btn"
+          (click)="loginWithGoogle()"
+          [disabled]="isSubmitting()"
+        >
+          Continue with Google
+        </button>
+      </div>
+    </section>
+  </main>
+</div>

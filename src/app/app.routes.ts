@@ -4,6 +4,15 @@ import { adminAccessGuard, adminMatchGuard } from './auth/admin-access.guard';
 
 export const routes: Routes = [
   {
+    path: '',
+    pathMatch: 'full',
+    title: 'Skill Wanderer Admin Login',
+    loadComponent: () =>
+      import('./pages/admin-login/admin-login.component').then(
+        (module) => module.AdminLoginComponent,
+      ),
+  },
+  {
     path: 'admin',
     canMatch: [adminMatchGuard],
     canActivateChild: [adminAccessGuard],
@@ -13,17 +22,14 @@ export const routes: Routes = [
         pathMatch: 'full',
         title: 'Skill Wanderer Admin',
         loadComponent: () =>
-          import('./pages/admin-home.component').then((module) => module.AdminHomeComponent),
+          import('./pages/admin-home/admin-home.component').then(
+            (module) => module.AdminHomeComponent,
+          ),
       },
     ],
   },
   {
-    path: '',
-    pathMatch: 'full',
-    redirectTo: 'admin',
-  },
-  {
     path: '**',
-    redirectTo: 'admin',
+    redirectTo: '',
   },
 ];
