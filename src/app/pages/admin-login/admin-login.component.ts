@@ -34,18 +34,7 @@ export class AdminLoginComponent implements OnInit {
   loginWithSso(): void {
     this.isSubmitting.set(true);
     this.authService
-      .login$()
-      .pipe(
-        catchError(() => EMPTY),
-        finalize(() => this.isSubmitting.set(false)),
-      )
-      .subscribe();
-  }
-
-  loginWithGoogle(): void {
-    this.isSubmitting.set(true);
-    this.authService
-      .loginWithGoogle$()
+      .login$({ forcePrompt: true })
       .pipe(
         catchError(() => EMPTY),
         finalize(() => this.isSubmitting.set(false)),

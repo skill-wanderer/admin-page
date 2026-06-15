@@ -22,7 +22,7 @@
         <p class="card-kicker">Admin Portal</p>
         <h2>Sign in to continue</h2>
         <p class="card-copy">
-          Choose a sign-in method to open the admin dashboard.
+          Continue with Skill Wanderer SSO to open the admin dashboard.
         </p>
       </div>
 
@@ -33,16 +33,6 @@
       <div class="actions">
         <button type="button" class="primary-btn" (click)="loginWithSso()" [disabled]="isSubmitting()">
           {{ isSubmitting() ? 'Redirecting...' : 'Login with SSO' }}
-        </button>
-
-        <button
-          *ngIf="authService.hasGoogleLogin()"
-          type="button"
-          class="secondary-btn"
-          (click)="loginWithGoogle()"
-          [disabled]="isSubmitting()"
-        >
-          Continue with Google
         </button>
       </div>
     </section>
