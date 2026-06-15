@@ -6,7 +6,8 @@
     "enabled": true
   },
   "assets": {
-    "directory": "dist/"
+    "directory": "dist/admin-page-temp/browser/index.html",
+    "binding": "ASSETS"
   },
   "compatibility_flags": [
     "nodejs_compat"
