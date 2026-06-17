@@ -28,11 +28,13 @@ export class AdminLoginComponent implements OnInit {
           return;
         }
 
-        if (this.isAuthCallbackRequest() && this.authService.hasAdminRole()) {
+        if (this.authService.hasAdminRole()) {
+          localStorage.removeItem('no-admin-role');
           void this.router.navigateByUrl('/admin');
           return;
         }
 
+        localStorage.setItem('no-admin-role', 'true');
         this.logoutFromLandingPage();
       },
     });
@@ -54,12 +56,5 @@ export class AdminLoginComponent implements OnInit {
       .logout$()
       .pipe(catchError(() => EMPTY))
       .subscribe();
-  }
-
-  private isAuthCallbackRequest(): boolean {
-    const callbackPayload = `${window.location.search}&${window.location.hash}`;
-    return ['code=', 'state=', 'session_state=', 'iss='].some((fragment) =>
-      callbackPayload.includes(fragment),
-    );
   }
 }

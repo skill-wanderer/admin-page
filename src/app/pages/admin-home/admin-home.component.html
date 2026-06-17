@@ -2,119 +2,214 @@
   <div class="dashboard-backdrop"></div>
 
   <main class="dashboard-layout">
-    <header class="topbar">
-      <div class="brand">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
         <div class="brand-mark">SW</div>
         <div>
           <p class="eyebrow">Skill Wanderer</p>
-          <h1>Admin control room</h1>
+          <h1>Admin desk</h1>
         </div>
       </div>
 
-      <div class="topbar-actions">
+      <section class="sidebar-panel operator-panel">
+        <p class="panel-kicker">Current operator</p>
+        <h2>{{ authService.displayName() ?? 'Administrator' }}</h2>
+        <p class="sidebar-copy">
+          Privileged access is active for this session. Keep administrative actions contained to
+          this workspace.
+        </p>
+
+        <div class="operator-state">
+          <span class="status-dot"></span>
+          {{ currentShiftLabel }}
+        </div>
+      </section>
+
+      <nav class="sidebar-panel">
+        <p class="panel-kicker">Navigation</p>
+        <div class="nav-group">
+          <button
+            type="button"
+            class="nav-item"
+            [class.is-active]="item.active"
+            *ngFor="let item of primaryNav"
+          >
+            <span class="nav-label">{{ item.label }}</span>
+            <span class="nav-meta">{{ item.meta }}</span>
+          </button>
+        </div>
+      </nav>
+
+      <section class="sidebar-panel">
+        <p class="panel-kicker">Admin tools</p>
+        <div class="nav-group nav-group-compact">
+          <button type="button" class="nav-item nav-item-ghost" *ngFor="let item of supportNav">
+            <span class="nav-label">{{ item.label }}</span>
+            <span class="nav-meta">{{ item.meta }}</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="sidebar-panel sidebar-actions">
         <ng-container *ngIf="websiteUrl; else noSite">
           <a [href]="websiteUrl" target="_blank" rel="noopener noreferrer" class="action-link">
-            Open website
+            Open live site
           </a>
         </ng-container>
         <ng-template #noSite>
-          <span class="action-link is-disabled">Open website</span>
+          <span class="action-link is-disabled">Live site unavailable</span>
         </ng-template>
 
         <button type="button" class="signout-btn" (click)="logout()">Sign out</button>
-      </div>
-    </header>
+      </section>
+    </aside>
 
-    <section class="hero-card">
-      <div class="hero-copy">
-        <p class="eyebrow">Authenticated workspace</p>
-        <h2>{{ authService.displayName() ?? 'Administrator' }}</h2>
-        <p class="hero-text">
-          Your admin workspace is live and connected through Skill Wanderer SSO. Use this area
-          as the secure entry point for operations, permissions, and internal tooling.
-        </p>
-      </div>
-
-      <div class="hero-status">
-        <div class="status-chip">
-          <span class="status-dot"></span>
-          Session active
+    <section class="content-area">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Operations dashboard</p>
+          <h3>Admin overview</h3>
         </div>
-        <p class="status-note">Protected by Keycloak</p>
-      </div>
-    </section>
 
-    <section class="stats-grid">
-      <article class="metric-card">
-        <p class="metric-label">Authentication</p>
-        <div class="metric-value" [class.is-positive]="authService.isAuthenticated()">
-          {{ authService.isAuthenticated() ? 'Verified' : 'Inactive' }}
-        </div>
-        <p class="metric-meta">SSO session status</p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Admin Role</p>
-        <div class="metric-value" [class.is-positive]="authService.hasAdminRole()">
-          {{ authService.hasAdminRole() ? 'Granted' : 'Missing' }}
-        </div>
-        <p class="metric-meta">realm role: Admin</p>
-      </article>
-
-      <article class="metric-card">
-        <p class="metric-label">Identity</p>
-        <div class="metric-value identity">{{ authService.displayName() ?? 'Guest' }}</div>
-        <p class="metric-meta">current account</p>
-      </article>
-    </section>
-
-    <section class="content-grid">
-      <article class="panel panel-featured">
-        <p class="panel-kicker">Workspace posture</p>
-        <h3>Everything is ready for controlled access.</h3>
-        <p class="panel-copy">
-          The admin entry flow now matches the public client experience: users land here safely,
-          choose when to sign in, and only then move into SSO.
-        </p>
-
-        <div class="highlight-row">
-          <div class="highlight-card">
-            <span class="highlight-title">Manual login flow</span>
-            <span class="highlight-sub">No auto-redirect on first visit</span>
+        <div class="topbar-badges">
+          <div class="session-pill">
+            <span class="status-dot"></span>
+            Protected by Keycloak
           </div>
-          <div class="highlight-card">
-            <span class="highlight-title">Stable callback</span>
-            <span class="highlight-sub">Returns to root before routing internally</span>
+          <div class="session-pill">{{ todayLabel }}</div>
+        </div>
+      </header>
+
+      <section class="hero-card">
+        <div class="hero-copy">
+          <p class="panel-kicker">Priority lane</p>
+          <h4>Start with access integrity, then move through operational checks.</h4>
+          <p class="hero-text">
+            This view is structured for day-to-day admin work: confirm who is in control, confirm
+            the route is protected, and use the quick actions to move safely through privileged
+            tasks.
+          </p>
+        </div>
+
+        <div class="hero-side">
+          <div class="hero-badge">
+            Admin role {{ authService.hasAdminRole() ? 'confirmed' : 'required' }}
+          </div>
+          <div class="hero-meta">
+            <span>Session {{ authService.isAuthenticated() ? 'active' : 'inactive' }}</span>
+            <span>{{ websiteUrl || 'Website endpoint not configured' }}</span>
           </div>
         </div>
-      </article>
+      </section>
 
-      <article class="panel">
-        <p class="panel-kicker">Quick checks</p>
-        <div class="check-list">
-          <div class="check-item">
-            <span class="check-dot is-good"></span>
+      <section class="overview-grid">
+        <article class="metric-card metric-card-primary">
+          <p class="metric-label">Session state</p>
+          <div class="metric-value" [class.is-positive]="authService.isAuthenticated()">
+            {{ authService.isAuthenticated() ? 'Active' : 'Inactive' }}
+          </div>
+          <p class="metric-meta">Current admin session availability</p>
+        </article>
+
+        <article class="metric-card">
+          <p class="metric-label">Privilege level</p>
+          <div class="metric-value" [class.is-positive]="authService.hasAdminRole()">
+            {{ authService.hasAdminRole() ? 'Admin' : 'Restricted' }}
+          </div>
+          <p class="metric-meta">Realm authorization status</p>
+        </article>
+
+        <article class="metric-card">
+          <p class="metric-label">Operator identity</p>
+          <div class="metric-value identity">{{ authService.displayName() ?? 'Unknown operator' }}</div>
+          <p class="metric-meta">Authenticated account in control</p>
+        </article>
+
+        <article class="metric-card">
+          <p class="metric-label">Website endpoint</p>
+          <div class="metric-value identity">{{ websiteUrl || 'Not configured' }}</div>
+          <p class="metric-meta">Public environment shortcut</p>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel panel-priority">
+          <div class="panel-heading">
             <div>
-              <p class="check-title">Keycloak session</p>
-              <p class="check-copy">Active and ready for token refresh.</p>
+              <p class="panel-kicker">Admin priorities</p>
+              <h4 class="is-compact">Core workflow for privileged operations</h4>
+            </div>
+            <div class="panel-tag">Overview lane</div>
+          </div>
+
+          <div class="action-stack">
+            <div class="action-item" *ngFor="let action of quickActions; let index = index">
+              <span class="action-index">0{{ index + 1 }}</span>
+              <div>
+                <p class="action-title">{{ action.title }}</p>
+                <p class="action-copy">{{ action.detail }}</p>
+              </div>
             </div>
           </div>
-          <div class="check-item">
-            <span class="check-dot is-warm"></span>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
             <div>
-              <p class="check-title">Redirect policy</p>
-              <p class="check-copy">Confirm Keycloak allows the root admin URL.</p>
+              <p class="panel-kicker">System posture</p>
+              <h4 class="is-compact">Operational guardrails</h4>
             </div>
           </div>
-          <div class="check-item">
-            <span class="check-dot"></span>
-            <div>
-              <p class="check-title">Runtime config</p>
-              <p class="check-copy">Environment values are loaded from runtime script.</p>
+
+          <div class="check-list">
+            <div class="check-item" *ngFor="let check of operationalChecks">
+              <div class="check-copy-block">
+                <div class="check-head">
+                  <p class="check-title">{{ check.title }}</p>
+                  <span class="state-badge">{{ check.state }}</span>
+                </div>
+                <p class="check-copy">{{ check.note }}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </article>
+        </article>
+      </section>
+
+      <section class="lower-grid">
+        <article class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="panel-kicker">Activity feed</p>
+              <h4 class="is-compact">Recent admin signals</h4>
+            </div>
+          </div>
+
+          <div class="timeline">
+            <div class="timeline-item" *ngFor="let item of activityFeed">
+              <span class="timeline-time">{{ item.time }}</span>
+              <div class="timeline-body">
+                <p class="timeline-title">{{ item.title }}</p>
+                <p class="timeline-copy">{{ item.note }}</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel panel-side">
+          <div class="panel-heading">
+            <div>
+              <p class="panel-kicker">Operator reminders</p>
+              <h4 class="is-compact">Good admin hygiene</h4>
+            </div>
+          </div>
+
+          <ul class="reminder-list">
+            <li>Use the live site shortcut to validate public-facing changes after privileged work.</li>
+            <li>Keep this session limited to admin tasks and sign out when the handoff is complete.</li>
+            <li>Recheck authorization before making environment-specific changes or approvals.</li>
+          </ul>
+        </article>
+      </section>
     </section>
   </main>
 </div>

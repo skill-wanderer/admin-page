@@ -36,7 +36,6 @@ interface LoginOptions {
 }
 
 const STORAGE_KEY = 'skill-wanderer.admin.keycloak-session';
-sessionStorage.removeItem(STORAGE_KEY);
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
