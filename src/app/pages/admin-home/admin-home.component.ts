@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EMPTY, catchError } from 'rxjs';
-import { AuthService } from '../auth/auth.service';
-import { RUNTIME_ENV } from '../config/runtime-env';
+import { AuthService } from '../../auth/auth.service';
+import { RUNTIME_ENV } from '../../config/runtime-env';
 
 @Component({
   selector: 'app-admin-home',
