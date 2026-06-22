@@ -80,33 +80,6 @@ $radius-lg: 12px;
   gap: 8px;
 }
 
-.btn-ghost {
-  font-family: $font-main;
-  font-size: 13px;
-  font-weight: 400;
-  color: $gray-400;
-  background: transparent;
-  border: 0.5px solid $gray-100;
-  border-radius: $radius-md;
-  padding: 6px 14px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  transition: background 0.15s;
-
-  &:hover { background: $gray-50; }
-
-  &.disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-
-  i { font-size: 13px; }
-}
-
 .btn-solid {
   font-family: $font-main;
   font-size: 13px;
@@ -172,6 +145,7 @@ $radius-lg: 12px;
   border-radius: $radius-md;
   padding: 8px 10px;
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.12s;
   text-align: left;
 

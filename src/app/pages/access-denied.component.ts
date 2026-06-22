@@ -1,21 +1,19 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { EMPTY, catchError } from 'rxjs';
+
 import { AuthService } from '../auth/auth.service';
 
 @Component({
-  selector: 'app-admin-home',
+  selector: 'app-access-denied',
   standalone: true,
-  imports: [CommonModule, RouterLink],
-  templateUrl: './admin-home.component.html',
-  styleUrls: ['./admin-home.component.scss'],
+  templateUrl: './access-denied.component.html',
+  styleUrl: './access-denied.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminHomeComponent {
+export class AccessDeniedComponent {
   readonly authService = inject(AuthService);
 
-  logout(): void {
+  signOut(): void {
     this.authService
       .logout$()
       .pipe(catchError(() => EMPTY))

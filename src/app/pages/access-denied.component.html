@@ -1,0 +1,15 @@
+<main class="access-denied">
+  <section class="access-denied__card" aria-labelledby="access-denied-title">
+    <div class="access-denied__icon" aria-hidden="true">!</div>
+    <p class="access-denied__eyebrow">Skill Wanderer Admin</p>
+    <h1 id="access-denied-title">Access denied</h1>
+    <p>
+      You are signed in, but this account does not have any accepted admin realm role
+      (<strong>{{ authService.portalAdminRoleLabel }}</strong>).
+    </p>
+    <p class="access-denied__hint">
+      Ask a Keycloak administrator to assign the role, or sign out and use another account.
+    </p>
+    <button type="button" (click)="signOut()">Sign out</button>
+  </section>
+</main>

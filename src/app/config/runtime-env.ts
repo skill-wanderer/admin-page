@@ -4,8 +4,9 @@ type RuntimeKey =
   | 'KEYCLOAK_URL'
   | 'KEYCLOAK_REALM'
   | 'KEYCLOAK_ADMIN_CLIENT_ID'
-  | 'KEYCLOAK_GOOGLE_IDP_HINT'
-  | 'APP_WEBSITE_URL'
+  | 'ADMIN_REALM_ROLES'
+  | 'API_BASE_URL_CRM'
+  | 'TENANT_ADMIN_ROLE_CRM'
   | 'KEYCLOAK_REFRESH_WINDOW_SECONDS'
   | 'KEYCLOAK_REFRESH_WINDOW_PERCENT'
   | 'KEYCLOAK_REFRESH_WINDOW_MIN_SECONDS'
@@ -23,8 +24,9 @@ export interface RuntimeEnv {
   keycloakUrl: string;
   keycloakRealm: string;
   keycloakAdminClientId: string;
-  keycloakGoogleIdpHint: string | null;
-  appWebsiteUrl: string;
+  adminRealmRoles: readonly string[];
+  apiBaseUrlCrm: string;
+  tenantAdminRoleCrm: string;
   keycloakRefreshWindowSeconds: number;
   keycloakRefreshWindowPercent: number;
   keycloakRefreshWindowMinSeconds: number;
@@ -37,8 +39,9 @@ const fallbackEnv: RuntimeEnv = {
   keycloakUrl: '',
   keycloakRealm: '',
   keycloakAdminClientId: '',
-  keycloakGoogleIdpHint: null,
-  appWebsiteUrl: '',
+  adminRealmRoles: ['CRM'],
+  apiBaseUrlCrm: '',
+  tenantAdminRoleCrm: 'CRM',
   keycloakRefreshWindowSeconds: 60,
   keycloakRefreshWindowPercent: 20,
   keycloakRefreshWindowMinSeconds: 60,
@@ -61,13 +64,15 @@ function readRequiredRuntimeValue(key: RuntimeKey, fallbackValue = ''): string {
   return resolvedValue;
 }
 
-function readOptionalRuntimeValue(key: RuntimeKey, fallbackValue: string | null): string | null {
-  const runtimeValue = window.__env?.[key]?.trim();
-  if (runtimeValue && runtimeValue.length > 0) {
-    return runtimeValue;
+function readRequiredRuntimeList(key: RuntimeKey, fallbackValues: readonly string[]): string[] {
+  const rawValue = readRequiredRuntimeValue(key, fallbackValues.join(','));
+  const values = [...new Set(rawValue.split(',').map((value) => value.trim()).filter(Boolean))];
+
+  if (values.length === 0) {
+    throw new Error(`Missing required runtime config: ${key}`);
   }
 
-  return fallbackValue && fallbackValue.length > 0 ? fallbackValue : null;
+  return values;
 }
 
 function readOptionalRuntimeNumber(key: RuntimeKey, fallbackValue: number): number {
@@ -92,11 +97,15 @@ export function loadRuntimeEnv(): RuntimeEnv {
       'KEYCLOAK_ADMIN_CLIENT_ID',
       fallbackEnv.keycloakAdminClientId,
     ),
-    keycloakGoogleIdpHint: readOptionalRuntimeValue(
-      'KEYCLOAK_GOOGLE_IDP_HINT',
-      fallbackEnv.keycloakGoogleIdpHint,
+    adminRealmRoles: readRequiredRuntimeList(
+      'ADMIN_REALM_ROLES',
+      fallbackEnv.adminRealmRoles,
     ),
-    appWebsiteUrl: readRequiredRuntimeValue('APP_WEBSITE_URL', fallbackEnv.appWebsiteUrl),
+    apiBaseUrlCrm: readRequiredRuntimeValue('API_BASE_URL_CRM', fallbackEnv.apiBaseUrlCrm),
+    tenantAdminRoleCrm: readRequiredRuntimeValue(
+      'TENANT_ADMIN_ROLE_CRM',
+      fallbackEnv.tenantAdminRoleCrm,
+    ),
     keycloakRefreshWindowSeconds: readOptionalRuntimeNumber(
       'KEYCLOAK_REFRESH_WINDOW_SECONDS',
       fallbackEnv.keycloakRefreshWindowSeconds,

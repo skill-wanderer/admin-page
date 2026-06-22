@@ -7,14 +7,6 @@
         <span class="brand-name">Admin Portal</span>
       </div>
       <div class="header-actions">
-        <ng-container *ngIf="websiteUrl; else noSite">
-          <a [href]="websiteUrl" target="_blank" rel="noopener noreferrer" class="btn-ghost">
-            <i class="ti ti-external-link"></i> View Site
-          </a>
-        </ng-container>
-        <ng-template #noSite>
-          <span class="btn-ghost disabled">View Site</span>
-        </ng-template>
         <button type="button" (click)="logout()" class="btn-solid">
           <i class="ti ti-logout"></i> Sign out
         </button>
@@ -29,6 +21,11 @@
           <button class="nav-item active" type="button" aria-current="page">
             <i class="ti ti-layout-dashboard"></i> Dashboard
           </button>
+          @if (authService.canManageTenants()) {
+            <a class="nav-item" routerLink="/admin/tenants">
+              <i class="ti ti-building"></i> Tenants
+            </a>
+          }
           <button class="nav-item" type="button">
             <i class="ti ti-users"></i> Users
           </button>
@@ -69,13 +66,13 @@
           </article>
 
           <article class="stat-card">
-            <p class="stat-label">Admin Role</p>
+            <p class="stat-label">Admin access</p>
             <div class="stat-value" [class.status-ok]="authService.hasAdminRole()">
               <i class="ti ti-shield-check" *ngIf="authService.hasAdminRole()"></i>
               <i class="ti ti-shield-x" *ngIf="!authService.hasAdminRole()"></i>
               {{ authService.hasAdminRole() ? 'Granted' : 'Missing' }}
             </div>
-            <p class="stat-sub">ROLE_ADMIN</p>
+            <p class="stat-sub">Accepted roles: {{ authService.portalAdminRoleLabel }}</p>
           </article>
 
           <article class="stat-card">

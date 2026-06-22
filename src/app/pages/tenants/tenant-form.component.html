@@ -1,0 +1,160 @@
+<div class="min-h-screen bg-gray-50 text-gray-900">
+  <header class="border-b border-gray-100 bg-white">
+    <div class="mx-auto flex h-16 max-w-3xl items-center px-4 sm:px-6">
+      <a
+        routerLink="/admin/tenants"
+        class="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+      >
+        ← Tenants
+      </a>
+      <span class="mx-4 h-5 w-px bg-gray-200"></span>
+      <h1 class="text-lg font-semibold">{{ isEditMode ? 'Edit tenant' : 'Create tenant' }}</h1>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    @if (accessDenied()) {
+      <section class="rounded-lg border border-amber-200 bg-amber-50 p-6" role="alert">
+        <h2 class="font-semibold text-amber-900">Access denied</h2>
+        <p class="mt-1 text-sm text-amber-800">
+          Your account does not have permission to manage tenants.
+        </p>
+        <a
+          routerLink="/admin"
+          class="mt-4 inline-block text-sm font-medium text-amber-900 underline"
+        >
+          Return to dashboard
+        </a>
+      </section>
+    } @else if (notFound()) {
+      <section class="rounded-lg border border-gray-200 bg-white p-6" role="alert">
+        <h2 class="font-semibold">Tenant no longer exists</h2>
+        <p class="mt-1 text-sm text-gray-600">It may have been deleted by another administrator.</p>
+        <a
+          routerLink="/admin/tenants"
+          class="mt-4 inline-block rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+        >
+          Return to tenants
+        </a>
+      </section>
+    } @else if (loading()) {
+      <section
+        class="rounded-lg border border-gray-200 bg-white p-12 text-center text-sm text-gray-500"
+      >
+        Loading tenant…
+      </section>
+    } @else {
+      <form
+        [formGroup]="form"
+        (ngSubmit)="submit()"
+        class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm sm:p-8"
+      >
+        <div class="mb-7">
+          <h2 class="text-xl font-semibold">
+            {{ isEditMode ? 'Tenant details' : 'Add a tenant' }}
+          </h2>
+          <p class="mt-1 text-sm text-gray-500">
+            {{
+              isEditMode
+                ? 'Update the tenant profile and availability.'
+                : 'Create an organization that can use the platform.'
+            }}
+          </p>
+        </div>
+
+        @if (formError()) {
+          <div
+            class="mb-6 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+            role="alert"
+          >
+            {{ formError() }}
+          </div>
+        }
+
+        <fieldset [disabled]="saving()" class="space-y-6">
+          <label class="block text-sm font-medium text-gray-700">
+            Name <span class="text-red-600">*</span>
+            <input
+              formControlName="name"
+              type="text"
+              maxlength="120"
+              autocomplete="organization"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              [class.border-red-400]="nameError()"
+            />
+            @if (nameError(); as message) {
+              <span class="mt-1 block text-xs text-red-600">{{ message }}</span>
+            }
+          </label>
+
+          <label class="block text-sm font-medium text-gray-700">
+            Slug
+            <input
+              formControlName="slug"
+              type="text"
+              maxlength="63"
+              autocomplete="off"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+              [class.border-red-400]="slugError()"
+            />
+            @if (slugError(); as message) {
+              <span class="mt-1 block text-xs text-red-600">{{ message }}</span>
+            } @else {
+              <span class="mt-1 block text-xs text-gray-500">
+                {{
+                  isEditMode
+                    ? 'The slug cannot be changed after creation.'
+                    : 'Auto-derived from name if blank; cannot be changed later.'
+                }}
+              </span>
+            }
+          </label>
+
+          <label class="block text-sm font-medium text-gray-700">
+            Description
+            <textarea
+              formControlName="description"
+              rows="5"
+              maxlength="1000"
+              class="mt-1 block w-full resize-y rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              [class.border-red-400]="descriptionError()"
+            ></textarea>
+            <span class="mt-1 flex justify-between text-xs">
+              <span class="text-red-600">{{ descriptionError() }}</span>
+              <span class="text-gray-400">{{ form.controls.description.value.length }}/1000</span>
+            </span>
+          </label>
+
+          @if (isEditMode) {
+            <label class="block text-sm font-medium text-gray-700">
+              Status <span class="text-red-600">*</span>
+              <select
+                formControlName="status"
+                class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 outline-none focus:border-teal-500 sm:w-56"
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </label>
+          }
+
+          <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-6">
+            <a
+              routerLink="/admin/tenants"
+              class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </a>
+            <button
+              type="submit"
+              [disabled]="saving()"
+              class="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-wait disabled:opacity-60"
+            >
+              {{ saving() ? 'Saving…' : isEditMode ? 'Save changes' : 'Create tenant' }}
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    }
+  </main>
+</div>

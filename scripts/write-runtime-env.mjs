@@ -5,7 +5,10 @@ const projectRoot = resolve(process.cwd());
 const envFilePath = resolve(projectRoot, '.env');
 const outputFilePath = resolve(projectRoot, 'public/runtime-config.js');
 
-const defaults = {};
+const defaults = {
+  ADMIN_REALM_ROLES: 'CRM',
+  TENANT_ADMIN_ROLE_CRM: 'CRM',
+};
 
 function stripQuotes(value) {
   if (!value) {
@@ -45,26 +48,27 @@ function parseEnvFile(content) {
 const fileEnv = existsSync(envFilePath) ? parseEnvFile(readFileSync(envFilePath, 'utf8')) : {};
 
 function resolveRequiredEnv(key) {
-  const value = process.env[key] ?? fileEnv[key] ?? defaults[key];
+  const value = process.env[key] ?? fileEnv[key];
   const normalizedValue = stripQuotes(value);
-  if (!normalizedValue) {
-    throw new Error(`Missing required environment variable: ${key}`);
+  if (normalizedValue) {
+    return normalizedValue;
   }
 
-  return normalizedValue;
-}
+  const defaultValue = stripQuotes(defaults[key]);
+  if (defaultValue) {
+    return defaultValue;
+  }
 
-function resolveOptionalEnv(key) {
-  const value = process.env[key] ?? fileEnv[key] ?? defaults[key];
-  return stripQuotes(value) || null;
+  throw new Error(`Missing required environment variable: ${key}`);
 }
 
 const runtimeEnv = {
   KEYCLOAK_URL: resolveRequiredEnv('KEYCLOAK_URL'),
   KEYCLOAK_REALM: resolveRequiredEnv('KEYCLOAK_REALM'),
   KEYCLOAK_ADMIN_CLIENT_ID: resolveRequiredEnv('KEYCLOAK_ADMIN_CLIENT_ID'),
-  KEYCLOAK_GOOGLE_IDP_HINT: resolveOptionalEnv('KEYCLOAK_GOOGLE_IDP_HINT'),
-  APP_WEBSITE_URL: resolveRequiredEnv('APP_WEBSITE_URL'),
+  ADMIN_REALM_ROLES: resolveRequiredEnv('ADMIN_REALM_ROLES'),
+  API_BASE_URL_CRM: resolveRequiredEnv('API_BASE_URL_CRM'),
+  TENANT_ADMIN_ROLE_CRM: resolveRequiredEnv('TENANT_ADMIN_ROLE_CRM'),
 };
 
 mkdirSync(dirname(outputFilePath), { recursive: true });

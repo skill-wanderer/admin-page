@@ -32,27 +32,38 @@ interface TokenClaims {
 interface LoginOptions {
   forcePrompt?: boolean;
   redirectUri?: string;
-  idpHint?: string;
 }
 
 const STORAGE_KEY = 'skill-wanderer.admin.keycloak-session';
-sessionStorage.removeItem(STORAGE_KEY);
+
+export function hasAnyRole(
+  assignedRoles: readonly string[],
+  acceptedRoles: readonly string[],
+): boolean {
+  return acceptedRoles.some((role) => assignedRoles.includes(role));
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly runtimeEnv = inject(RUNTIME_ENV);
   private readonly router = inject(Router);
+  private readonly portalAdminRoles = this.runtimeEnv.adminRealmRoles;
   private keycloak: Keycloak | null = null;
   private initStream$: Observable<void> | null = null;
   private refreshIntervalId: number | null = null;
   private readonly readyState = signal(false);
   private readonly authenticatedState = signal(false);
   private readonly adminRoleState = signal(false);
+  private readonly rolesState = signal<readonly string[]>([]);
   private readonly displayNameState = signal<string | null>(null);
   readonly isReady = this.readyState.asReadonly();
   readonly isLoggedIn = this.authenticatedState.asReadonly();
   readonly displayName = this.displayNameState.asReadonly();
+  readonly portalAdminRoleLabel = this.portalAdminRoles.join(' or ');
   readonly canAccessAdmin = computed(() => this.isLoggedIn() && this.adminRoleState());
+  readonly canManageTenants = computed(
+    () => this.isLoggedIn() && this.rolesState().includes(this.runtimeEnv.tenantAdminRoleCrm),
+  );
 
   isAuthenticated(): boolean {
     return this.authenticatedState();
@@ -62,8 +73,8 @@ export class AuthService {
     return this.adminRoleState();
   }
 
-  hasGoogleLogin(): boolean {
-    return Boolean(this.runtimeEnv.keycloakGoogleIdpHint);
+  hasRole(role: string): boolean {
+    return this.rolesState().includes(role);
   }
 
   ensureInitialized$(): Observable<void> {
@@ -71,9 +82,7 @@ export class AuthService {
       return this.initStream$;
     }
 
-    this.initStream$ = this.initialize$().pipe(
-      shareReplay({ bufferSize: 1, refCount: false }),
-    );
+    this.initStream$ = this.initialize$().pipe(shareReplay({ bufferSize: 1, refCount: false }));
     return this.initStream$;
   }
 
@@ -84,23 +93,11 @@ export class AuthService {
           this.keycloak?.login({
             redirectUri: options.redirectUri ?? `${window.location.origin}/admin`,
             prompt: options.forcePrompt ? 'login' : undefined,
-            idpHint: options.idpHint,
           }) ?? Promise.resolve(),
         ),
       ),
       map(() => void 0),
     );
-  }
-
-  loginWithGoogle$(forcePrompt = false): Observable<void> {
-    if (!this.runtimeEnv.keycloakGoogleIdpHint) {
-      return throwError(() => new Error('Google identity provider is not configured.'));
-    }
-
-    return this.login$({
-      forcePrompt,
-      idpHint: this.runtimeEnv.keycloakGoogleIdpHint,
-    });
   }
 
   logout$(): Observable<void> {
@@ -253,6 +250,7 @@ export class AuthService {
       this.stopRefreshTimer();
       this.authenticatedState.set(false);
       this.adminRoleState.set(false);
+      this.rolesState.set([]);
       this.displayNameState.set(null);
       return;
     }
@@ -261,7 +259,8 @@ export class AuthService {
     const tokenClaims = (this.keycloak.tokenParsed ?? {}) as TokenClaims;
 
     this.authenticatedState.set(true);
-    this.adminRoleState.set(roleNames.includes('Admin'));
+    this.rolesState.set(roleNames);
+    this.adminRoleState.set(hasAnyRole(roleNames, this.portalAdminRoles));
     this.displayNameState.set(tokenClaims.name ?? tokenClaims.preferred_username ?? null);
     this.startRefreshTimer();
     this.persistStoredSession();
@@ -277,7 +276,9 @@ export class AuthService {
         return;
       }
 
-      this.refreshAccessToken$(this.runtimeEnv.keycloakProactiveRefreshMinValiditySeconds).subscribe({
+      this.refreshAccessToken$(
+        this.runtimeEnv.keycloakProactiveRefreshMinValiditySeconds,
+      ).subscribe({
         error: () => {
           this.clearStoredSession();
           this.syncAuthState(false);
