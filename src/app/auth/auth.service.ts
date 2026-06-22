@@ -91,7 +91,7 @@ export class AuthService {
       switchMap(() =>
         from(
           this.keycloak?.login({
-            redirectUri: options.redirectUri ?? `${window.location.origin}/admin`,
+            redirectUri: options.redirectUri ?? this.getLoginRedirectUri(),
             prompt: options.forcePrompt ? 'login' : undefined,
           }) ?? Promise.resolve(),
         ),
@@ -108,7 +108,7 @@ export class AuthService {
         this.syncAuthState(false);
       }),
       switchMap(() =>
-        from(this.keycloak?.logout({ redirectUri: window.location.origin }) ?? Promise.resolve()),
+        from(this.keycloak?.logout({ redirectUri: this.getLogoutRedirectUri() }) ?? Promise.resolve()),
       ),
       map(() => void 0),
     );
@@ -340,5 +340,17 @@ export class AuthService {
 
   private clearStoredSession(): void {
     sessionStorage.removeItem(STORAGE_KEY);
+  }
+
+  private getLoginRedirectUri(): string {
+    return this.normalizeRedirectUri(window.location.origin);
+  }
+
+  private getLogoutRedirectUri(): string {
+    return this.normalizeRedirectUri(window.location.origin);
+  }
+
+  private normalizeRedirectUri(uri: string): string {
+    return uri.replace(/\/+$/, '');
   }
 }

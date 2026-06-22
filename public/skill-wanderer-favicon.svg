@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#333333" rx="80" ry="80" />
+  
+  <!-- Horizon Line with Mountains -->
+  <path d="M60,330 L120,270 L180,320 L240,280 L320,350 L430,300 L450,330 L60,330 Z" fill="#555555" />
+  
+  <!-- Wanderer Silhouette -->
+  <path d="M256,350 L250,270 L262,270 L256,350" fill="#111111" /> <!-- Body/legs -->
+  <path d="M240,270 C240,265 245,245 256,235 C267,245 272,265 272,270 L240,270" fill="#111111" /> <!-- Head and neck -->
+  
+  <!-- Straw Hat -->
+  <ellipse cx="256" cy="230" rx="40" ry="8" fill="#F9A825" stroke="#333333" stroke-width="2" />
+  <path d="M220,230 Q256,208 292,230" fill="#F9A825" stroke="#333333" stroke-width="2" />
+  <path d="M230,230 Q256,215 282,230" fill="none" stroke="#E65100" stroke-width="1.5" opacity="0.5" />
+  
+  <!-- Sun -->
+  <circle cx="400" cy="150" r="35" fill="#FF5722" opacity="0.8" />
+  <circle cx="400" cy="150" r="50" fill="none" stroke="#FF5722" stroke-width="5" opacity="0.3" />
+  
+  <!-- SW Letters - Smaller and repositioned -->
+  <g transform="translate(160, 140) scale(0.8)">
+    <!-- S Letter - Fixed -->
+    <path d="M10,0 C-10,0 -20,10 -20,20 C-20,30 -10,40 10,40 L30,40 C50,40 60,50 60,70 C60,90 40,100 20,100 L-20,100 L-20,80 L20,80 C30,80 35,75 35,70 C35,65 30,60 20,60 L0,60 C-20,60 -40,45 -40,20 C-40,-5 -20,-20 10,-20 L50,-20 L50,0 L10,0 Z" fill="#FF5722" />
+
+    <!-- W Letter -->
+    <path d="M80,-20 L100,100 L120,100 L140,30 L160,100 L180,100 L200,-20 L175,-20 L165,50 L145,-20 L135,-20 L115,50 L105,-20 Z" fill="#FF5722" />
+  </g>
+  
+  <!-- Path -->
+  <path d="M150,330 Q220,300 280,320 T370,310" fill="none" stroke="#FF5722" stroke-width="2" stroke-dasharray="2,2" opacity="0.6" />
+</svg>
